@@ -1,0 +1,412 @@
+## Packages.
+library(Seurat)
+
+### Get inDrop files. 
+wtfiles <- list.files('DD_WT_Matrices/.')
+
+## Initialize file list and upload all files. Wild type.
+seurat_list <- c()
+for (x in wtfiles){
+  y <- paste0('DD_WT_Matrices/',x)
+  z <- read.table(file = y, sep = '\t', header = T, row.names = 1, as.is = T)
+  seurat_list <- append(seurat_list,CreateSeuratObject(z, assay = "RNA",
+                                                       min.cells = 3, min.features = 0, names.field = 1,
+                                                       names.delim = "_", meta.data = NULL, project = x))
+}
+
+## Get inDrop files. 
+c16files <- list.files('DD_4NQO_16_Matrices/.')
+
+## Initialize file list and upload all files. 16 weeks. 
+for (x in c16files){
+  y <- paste0('DD_4NQO_16_Matrices/',x)
+  z <- read.table(file = y, sep = '\t', header = T, row.names = 1, as.is = T)
+  seurat_list <- append(seurat_list,CreateSeuratObject(z, assay = "RNA",
+                                                       min.cells = 3, min.features = 0, names.field = 1,
+                                                       names.delim = "_", meta.data = NULL, project = x))
+}
+
+## Get inDrop files. 
+c21files <- list.files('DD_4NQO_21_Matrices/.')
+
+## Initialize file list and upload all files. 16 weeks. 
+for (x in c21files){
+  y <- paste0('DD_4NQO_21_Matrices/',x)
+  z <- read.table(file = y, sep = '\t', header = T, row.names = 1, as.is = T)
+  seurat_list <- append(seurat_list,CreateSeuratObject(z, assay = "RNA",
+                                                       min.cells = 3, min.features = 0, names.field = 1,
+                                                       names.delim = "_", meta.data = NULL, project = x))
+}
+
+
+## QC and pre-process for all files.
+## WT cells.
+
+wttest <- merge(seurat_list[[1]], unlist(seurat_list[2:12]))
+VlnPlot(wttest, features = 'nFeature_RNA', split.by = 'orig.ident')
+
+done_list <- c()
+
+for (x in seurat_list[1:6]){
+  age <- sample(c("Old"),size = length(colnames(x)),replace = TRUE)
+  names(age) <- colnames(x)
+  x <- AddMetaData(x,age,col.name = 'Age')
+  cancer <- sample(c("0"),size = length(colnames(x)),replace = TRUE)
+  names(cancer) <- colnames(x)
+  x <- AddMetaData(x,cancer,col.name = 'Carcinogen_Weeks')
+  cancer <- sample(c("Treatment"),size = length(colnames(x)),replace = TRUE)
+  names(cancer) <- colnames(x)
+  x <- AddMetaData(x,cancer,col.name = 'Control')
+  x <- NormalizeData(x)
+  x[['P.Mito']] <- PercentageFeatureSet(x, pattern= '^mt-')
+  x <- subset(x, subset = P.Mito < 20 & nFeature_RNA > 250 & nFeature_RNA < 2000)
+  x <- FindVariableFeatures(x, selection.method = "vst", nfeatures = 2000)
+  done_list <- append(done_list,x)
+}
+
+## Young cells.
+
+for (x in seurat_list[7:12]){
+  age <- sample(c("Young"),size = length(colnames(x)),replace = TRUE)
+  names(age) <- colnames(x)
+  x <- AddMetaData(x,age,col.name = 'Age')
+  cancer <- sample(c("0"),size = length(colnames(x)),replace = TRUE)
+  names(cancer) <- colnames(x)
+  x <- AddMetaData(x,cancer,col.name = 'Carcinogen_Weeks')
+  cancer <- sample(c("Control"),size = length(colnames(x)),replace = TRUE)
+  names(cancer) <- colnames(x)
+  x <- AddMetaData(x,cancer,col.name = 'Treatment')
+  x <- NormalizeData(x)
+  x[['P.Mito']] <- PercentageFeatureSet(x, pattern= '^mt-')
+  x <- subset(x, subset = P.Mito < 20 & nFeature_RNA > 250 & nFeature_RNA < 2000)
+  x <- FindVariableFeatures(x, selection.method = "vst", nfeatures = 2000)
+  done_list <- append(done_list,x)
+}
+
+## Cancer cells, 16 weeks.
+
+wttest <- merge(seurat_list[[13]], unlist(seurat_list[14:18]))
+VlnPlot(wttest, features = 'nFeature_RNA', split.by = 'orig.ident')
+rm(wttest)
+
+## Let's do 750-3000
+
+for (x in seurat_list[13:18]){
+  age <- sample(c("Unknown"),size = length(colnames(x)),replace = TRUE)
+  names(age) <- colnames(x)
+  x <- AddMetaData(x,age,col.name = 'Age')
+  cancer <- sample(c("16"),size = length(colnames(x)),replace = TRUE)
+  names(cancer) <- colnames(x)
+  x <- AddMetaData(x,cancer,col.name = 'Carcinogen_Weeks')
+  cancer <- sample(c("Cancer"),size = length(colnames(x)),replace = TRUE)
+  names(cancer) <- colnames(x)
+  x <- AddMetaData(x,cancer,col.name = 'Treatment')
+  x <- NormalizeData(x)
+  x[['P.Mito']] <- PercentageFeatureSet(x, pattern= '^mt-')
+  x <- subset(x, subset = P.Mito < 20 & nFeature_RNA > 750 & nFeature_RNA < 3000)
+  x <- FindVariableFeatures(x, selection.method = "vst", nfeatures = 2000)
+  done_list <- append(done_list,x)
+}
+
+# Look at stats, how should we QC?
+
+wttest <- merge(seurat_list[[19]], unlist(seurat_list[20:26]))
+VlnPlot(wttest, features = 'nFeature_RNA', split.by = 'orig.ident')
+rm(wttest)
+
+for (x in seurat_list[19]){
+  age <- sample(c("Unknown"),size = length(colnames(x)),replace = TRUE)
+  names(age) <- colnames(x)
+  x <- AddMetaData(x,age,col.name = 'Age')
+  cancer <- sample(c("21"),size = length(colnames(x)),replace = TRUE)
+  names(cancer) <- colnames(x)
+  x <- AddMetaData(x,cancer,col.name = 'Carcinogen_Weeks')
+  cancer <- sample(c("Cancer"),size = length(colnames(x)),replace = TRUE)
+  names(cancer) <- colnames(x)
+  x <- AddMetaData(x,cancer,col.name = 'Treatment')
+  x <- NormalizeData(x)
+  x[['P.Mito']] <- PercentageFeatureSet(x, pattern= '^mt-')
+  x <- subset(x, subset = P.Mito < 20 & nFeature_RNA > 750 & nFeature_RNA < 3000)
+  x <- FindVariableFeatures(x, selection.method = "vst", nfeatures = 2000)
+  done_list <- append(done_list,x)
+}
+
+for (x in seurat_list[21]){
+  age <- sample(c("Unknown"),size = length(colnames(x)),replace = TRUE)
+  names(age) <- colnames(x)
+  x <- AddMetaData(x,age,col.name = 'Age')
+  cancer <- sample(c("21"),size = length(colnames(x)),replace = TRUE)
+  names(cancer) <- colnames(x)
+  x <- AddMetaData(x,cancer,col.name = 'Carcinogen_Weeks')
+  cancer <- sample(c("Cancer"),size = length(colnames(x)),replace = TRUE)
+  names(cancer) <- colnames(x)
+  x <- AddMetaData(x,cancer,col.name = 'Treatment')
+  x <- NormalizeData(x)
+  x[['P.Mito']] <- PercentageFeatureSet(x, pattern= '^mt-')
+  x <- subset(x, subset = P.Mito < 20 & nFeature_RNA > 500 & nFeature_RNA < 2000)
+  x <- FindVariableFeatures(x, selection.method = "vst", nfeatures = 2000)
+  done_list <- append(done_list,x)
+}
+
+for (x in seurat_list[22]){
+  age <- sample(c("Unknown"),size = length(colnames(x)),replace = TRUE)
+  names(age) <- colnames(x)
+  x <- AddMetaData(x,age,col.name = 'Age')
+  cancer <- sample(c("21"),size = length(colnames(x)),replace = TRUE)
+  names(cancer) <- colnames(x)
+  x <- AddMetaData(x,cancer,col.name = 'Carcinogen_Weeks')
+  cancer <- sample(c("Cancer"),size = length(colnames(x)),replace = TRUE)
+  names(cancer) <- colnames(x)
+  x <- AddMetaData(x,cancer,col.name = 'Treatment')
+  x <- NormalizeData(x)
+  x[['P.Mito']] <- PercentageFeatureSet(x, pattern= '^mt-')
+  x <- subset(x, subset = P.Mito < 20 & nFeature_RNA > 750 & nFeature_RNA < 2750)
+  x <- FindVariableFeatures(x, selection.method = "vst", nfeatures = 2000)
+  done_list <- append(done_list,x)
+}
+
+for (x in seurat_list[25]){
+  age <- sample(c("Unknown"),size = length(colnames(x)),replace = TRUE)
+  names(age) <- colnames(x)
+  x <- AddMetaData(x,age,col.name = 'Age')
+  cancer <- sample(c("21"),size = length(colnames(x)),replace = TRUE)
+  names(cancer) <- colnames(x)
+  x <- AddMetaData(x,cancer,col.name = 'Carcinogen_Weeks')
+  cancer <- sample(c("Cancer"),size = length(colnames(x)),replace = TRUE)
+  names(cancer) <- colnames(x)
+  x <- AddMetaData(x,cancer,col.name = 'Treatment')
+  x <- NormalizeData(x)
+  x[['P.Mito']] <- PercentageFeatureSet(x, pattern= '^mt-')
+  x <- subset(x, subset = P.Mito < 20 & nFeature_RNA > 750 & nFeature_RNA < 2500)
+  x <- FindVariableFeatures(x, selection.method = "vst", nfeatures = 2000)
+  done_list <- append(done_list,x)
+}
+
+## Get anchors & integrate data.
+int.anchors <- FindIntegrationAnchors(object.list = done_list, dims = 1:20, k.filter = 150)
+cancer.int <- IntegrateData(anchorset = int.anchors, dims = 1:20)
+DefaultAssay(cancer.int) <- "integrated"
+cancer.int <- ScaleData(cancer.int, verbose = FALSE)
+cancer.int <- RunPCA(cancer.int, npcs = 20, verbose = FALSE)
+cancer.int <- RunUMAP(cancer.int, reduction = "pca", dims = 1:20)
+cancer.int <- FindNeighbors(cancer.int, reduction = "pca", dims = 1:20)
+cancer.int <- FindClusters(cancer.int, resolution = 0.5)
+rm(done_list, seurat_list)
+
+## Visualize cells in UMAP.
+save(cancer.int, file = 'CancerInt/cancer.int.full')
+
+load('CancerInt/cancer.int.full')
+Idents(cancer.int) <- 'Carcinogen_Weeks'
+cancer.ds <- subset(cancer.int, downsample = 2500)
+Idents(cancer.ds) <- 'seurat_clusters'
+DimPlot(cancer.ds, split.by = 'Carcinogen_Weeks')
+save(cancer.ds, file = 'CancerInt/cancer.ds')
+DefaultAssay(cancer.ds) <- 'RNA'
+FeaturePlot(cancer.ds, features = c('Krt5','Krtdap'), split.by = 'Carcinogen_Weeks')
+FeaturePlot(cancer.ds, features = c('Ace2','Tmprss2'), split.by = 'Carcinogen_Weeks')
+
+# Cell Cycle
+sgenes <- c()
+for (x in cc.genes$s.genes){
+  sgenes <- append(sgenes,paste(substring(x,1,1),tolower(substring(x,2)), sep = ''))
+}
+
+g2mgenes <- c()
+for (x in cc.genes$g2m.genes){
+  g2mgenes <- append(g2mgenes,paste(substring(x,1,1),tolower(substring(x,2)), sep = ''))
+}
+cancer.ds <- CellCycleScoring(cancer.ds, s.features = sgenes, g2m.features = g2mgenes, set.ident = F)
+
+# Excise cluster 10, save
+cancer.ds <- subset(cancer.ds, idents = c(0,1,2,3,4,5,6,7,8,9,11,12))
+cancer.ds <- RenameIdents(cancer.ds, c('0' = 'Basal-1', '1' = 'Suprabasal', '2' = 'Superficial-1', '3' = 'Basal-2','4' = 'Basal-3','5' = 'Basal-4','6' = 'Basal-5','7' = 'Basal-6','8' = 'Superficial-2','9' = 'Basal-7','11' = 'Immune', '12' = 'Fibroblast'))
+newids <- c('Basal-1','Basal-2','Basal-3','Basal-4','Basal-5','Basal-6','Basal-7','Suprabasal', 'Superficial-1', 'Superficial-2','Immune', 'Fibroblast')
+names(newids) <- levels(cancer.ds)
+cancer.ds[['Subtypes']] <- factor(Idents(cancer.ds),levels = newids)
+Idents(cancer.ds) <- 'Subtypes'
+
+save(cancer.ds, file = 'CancerInt/cancer.ds')
+
+# Find all markers
+library(dplyr)
+cmarks <- FindAllMarkers(cancer.ds, assay = 'RNA', only.pos = F, test.use = 'LR', latent.vars = 'Carcinogen_Weeks')
+heatmarkers <-cmarks[which(cmarks$p_val_adj<0.05),] %>% group_by(cluster) %>% top_n(n = 5, wt = avg_logFC) 
+cavex <- AverageExpression(cancer.ds, return.seurat = T)
+DoHeatmap(object = cavex, features = heatmarkers$gene, assay = 'RNA', label = F, draw.lines = F)
+
+# Save just epithelial
+cancer.ds.epi <- subset(cancer.ds, idents = c('Basal-1','Basal-2','Basal-3','Basal-4','Basal-5','Basal-6','Basal-7','Suprabasal', 'Superficial-1', 'Superficial-2'))
+save('cancer.ds.epi', file = 'CancerInt/cancer.ds.epi')
+
+# Proportion changes
+library(reshape)
+cpt <- as.data.frame.matrix(prop.table(table(Idents(cancer.ds.epi), cancer.ds.epi$Carcinogen_Weeks), margin = 2))
+cpt$Cluster <- rownames(cpt)
+cpt <- melt(cpt, id.vars = 'Cluster')
+colnames(cpt)[2:3] <- c('Weeks','Fraction')
+cpt$Fraction <- as.numeric(as.character(cpt$Fraction))
+cpt$Cluster <- factor(cpt$Cluster, levels = c('Basal-1','Basal-2','Basal-3','Basal-4','Basal-5','Basal-6','Basal-7','Suprabasal', 'Superficial-1', 'Superficial-2','Immune', 'Fibroblast'))
+
+library(ggplot2)
+ggplot(cpt, aes(x=Cluster, y= Fraction, fill=Weeks)) + geom_bar(stat='identity',position = 'dodge') + theme_classic() + theme(axis.text.x = element_text(angle = 90, hjust = 1)) + scale_fill_manual(values = c('yellow','orange','red'))
+
+# Add celltype classification
+cancer.ds.epi <- RenameIdents(cancer.ds.epi, c('Basal-1' = 'Basal','Basal-2' = 'Basal','Basal-3' = 'Basal','Basal-4' = 'Basal','Basal-5' = 'Basal','Basal-6' = 'Basal','Basal-7' = 'Basal','Suprabasal' = 'Suprabasal', 'Superficial-1' = 'Superficial', 'Superficial-2' = 'Superficial'))
+cancer.ds.epi[['CellTypes']] <- Idents(cancer.ds.epi)
+Idents(cancer.ds.epi) <- 'CellTypes'
+cpt <- as.data.frame.matrix(prop.table(table(Idents(cancer.ds.epi), cancer.ds.epi$Carcinogen_Weeks), margin = 2))
+cpt$Celltype <- rownames(cpt)
+cpt <- melt(cpt, id.vars = 'Celltype')
+colnames(cpt)[2:3] <- c('Weeks','Fraction')
+cpt$Fraction <- as.numeric(as.character(cpt$Fraction))
+cpt$Celltype <- factor(cpt$Celltype, levels = c('Basal','Suprabasal','Superficial'))
+ggplot(cpt, aes(x=Celltype, y= Fraction, fill=Weeks)) + geom_bar(stat='identity',position = 'dodge') + theme_classic() + theme(axis.text.x = element_text(angle = 90, hjust = 1)) + scale_fill_manual(values = c('yellow','orange','red'))
+
+# Cell cycle changes?
+Idents(cancer.ds.epi) <- 'Phase'
+cpt <- as.data.frame.matrix(prop.table(table(Idents(cancer.ds.epi), cancer.ds.epi$Carcinogen_Weeks), margin = 2))
+cpt$Phase <- rownames(cpt)
+cpt <- melt(cpt, id.vars = 'Phase')
+colnames(cpt)[2:3] <- c('Weeks','Fraction')
+cpt$Fraction <- as.numeric(as.character(cpt$Fraction))
+cpt$Phase <- factor(cpt$Phase, levels = c('G1','G2M','S'))
+ggplot(cpt, aes(x=Phase, y= Fraction, fill=Weeks)) + geom_bar(stat='identity',position = 'dodge') + theme_classic() + theme(axis.text.x = element_text(angle = 90, hjust = 1)) + scale_fill_manual(values = c('yellow','orange','red'))
+
+
+# Monocle
+Idents(cancer.ds.epi) <- 'Subtypes'
+DefaultAssay(cancer.ds.epi) <- 'integrated'
+monocancer <- monocon(cancer.ds.epi)
+plot_cell_trajectory(monocancer, color_by = 'Carcinogen_Weeks') + scale_color_manual(values = c('0' = 'yellow','16' = 'orange', '21'='red'))
+plot_cell_trajectory(monocancer, color_by = 'orig.ident')
+plot_cell_trajectory(monocancer, color_by = 'Subtypes')
+
+# Very simple BEAM
+clustering_DEG_genes <-differentialGeneTest(monocancer,
+                       fullModelFormulaStr = '~Pseudotime',
+                       cores = 6)
+ordering_genes <- row.names(clustering_DEG_genes)[order(clustering_DEG_genes$qval)][1:1000]
+
+# Plot it
+beamgenes <- plot_pseudotime_heatmap(monocancer[ordering_genes,], cores = 6, use_gene_short_name = T,
+                        show_rownames = F, return_heatmap = T)
+
+# Get genes
+beamdf <- as.data.frame(cutree(beamgenes$tree_row, k=6))
+colnames(beamdf) <- "Cluster"
+beamdf$Gene <- rownames(beamdf)
+beamdf$qval <- clustering_DEG_genes[beamdf$Gene,]$qval
+beamdf <- beamdf[order(beamdf$qval),]
+
+write.csv(beamdf[which(beamdf$Cluster==1),], file = 'CancerInt/BEAM_C1.csv')
+write.csv(beamdf[which(beamdf$Cluster==2),], file = 'CancerInt/BEAM_C2.csv')
+write.csv(beamdf[which(beamdf$Cluster==3),], file = 'CancerInt/BEAM_C3.csv')
+write.csv(beamdf[which(beamdf$Cluster==4),], file = 'CancerInt/BEAM_C4.csv')
+write.csv(beamdf[which(beamdf$Cluster==5),], file = 'CancerInt/BEAM_C5.csv')
+write.csv(beamdf[which(beamdf$Cluster==6),], file = 'CancerInt/BEAM_C6.csv')
+
+topgenes <- c('Ptma','Ahnak','Akr1b8','Aldh3b2','Anxa5','Atp5g1')
+plot_cell_trajectory(monocancer, markers = topgenes, use_color_gradient = T)
+
+# Cancer genes
+cgenes <- unique(c(beamdf[which(beamdf$Cluster==1),]$Gene, beamdf[which(beamdf$Cluster==4),]$Gene, beamdf[which(beamdf$Cluster==6),]$Gene))
+load('CancerInt/cancer.ds.epi')
+
+# Percentage of cancer genes in each cell
+cancer.ds.epi[['P.4NQO']] <- PercentageFeatureSet(cancer.ds.epi, features = cgenes, assay = 'RNA')
+DefaultAssay(cancer.ds.epi) <- 'RNA'
+Idents(cancer.ds.epi) <- 'Carcinogen_Weeks'
+VlnPlot(subset(cancer.ds.epi, idents = '0'), features = 'P.4NQO', group.by = 'Subtypes')
+VlnPlot(subset(cancer.ds.epi, idents = '0'), features = 'P.4NQO', group.by = 'Phase')
+save(cancer.ds.epi, file = 'CancerInt/cancer.ds.epi')
+
+# Try again, increase resolution 
+monocancer_2 <- monocon(cancer.ds.epi)
+plot_cell_trajectory(monocancer_2, color_by = 'Carcinogen_Weeks') + scale_color_manual(values = c('0' = 'yellow','16' = 'orange', '21'='red'))
+plot_cell_trajectory(monocancer_2, color_by = 'orig.ident')
+plot_cell_trajectory(monocancer_2, color_by = 'Subtypes')
+plot_cell_trajectory(monocancer_2, color_by = 'State')
+
+cancer.ds.epi[['Week_Cluster']] <- paste(cancer.ds.epi$Carcinogen_Weeks, cancer.ds.epi$Subtypes, sep = "_")
+save(cancer.ds.epi, file = 'CancerInt/cancer.ds.epi')
+save(monocancer, file = 'CancerInt/monocancer')
+save(monocancer_2, file = 'CancerInt/monocancer_2')
+load('CancerInt/cancer.ds.epi')
+
+# Root at WT Basal
+monocancer_2 <- orderCells(monocancer_2, root_state = 2)
+plot_complex_cell_trajectory(monocancer_2, color_by = 'Carcinogen_Weeks') + scale_color_manual(values = c('0' = 'yellow','16' = 'orange', '21'='red'))
+plot_cell_trajectory(monocancer_2, color_by = 'Week_CellType', show_branch_points = F, theta = 270)
+cancer.ds.epi[['Week_CellType']] <- paste(monocancer_2$Carcinogen_Weeks, monocancer_2$CellTypes, sep = "_")
+
+
+# Try Week_Phase
+load('CancerInt/cancer.ds.epi')
+monocancer_4 <- monocon(cancer.ds.epi)
+plot_cell_trajectory(monocancer_4, color_by = 'Week_CellType')
+save(cancer.ds.epi, file = 'CancerInt/cancer.ds.epi')
+
+# Cancer genes
+escc <- c('Trp63','Sox2','Notch1','Ccnd1','Rb1','Pten','Egfr','Fgfr1','Ptch1','Kdm6a','Mll2')
+esca <- c('Gata4','Gata6','Ccne1','Erbb2','Vegfa','Kras','Igf1r','Fgfr2','Smad4','Arid1a','Smarca4')
+escc <- escc[escc %in% rownames(cancer.ds.epi)]
+esca <- esca[esca %in% rownames(cancer.ds.epi)]
+cancer.ds.epi[['P.ESCC']] <- PercentageFeatureSet(cancer.ds.epi, features = escc, assay = 'RNA')
+cancer.ds.epi[['P.ESCA']] <- PercentageFeatureSet(cancer.ds.epi, features = esca, assay = 'RNA')
+DotPlot(subset(cancer.ds.epi, idents = '0'), features = escc, group.by = 'Subtypes') + RotatedAxis()
+DotPlot(subset(cancer.ds.epi, idents = '0'), features = esca, group.by = 'Subtypes') + RotatedAxis()
+save(cancer.ds.epi, file = 'CancerInt/cancer.ds.epi')
+
+load('CancerInt/cancer.ds.epi')
+# Get MGI chromosome and coordinate list for each gene. Omit all genes with no coordinates
+mg <- as.data.frame(read.csv('MGenes_Chr.csv'))
+mg <- mg[order(mg$Chr,mg$Start),]
+mg <- mg[!is.na(mg$Start), ]
+
+# Get assay data for normal cells 
+Idents(cancer.ds.epi) <- 'Treatment'
+wt <- subset(cancer.ds.epi, idents = 'Control')
+wt_ref <- AverageExpression(wt, slot = 'data', assays = 'RNA')
+
+# Sort the genes based on the order of the dataframe 
+wt_ref <- as.data.frame(wt_ref$RNA)
+wt_ref$Gene <- rownames(wt_ref)
+wt_ref <- wt_ref[match(mg$Input,rownames(wt_ref)),]
+
+# Excise out unexpressed genes
+wt_ref <- wt_ref[!(wt_ref$Control==0),]
+
+# Get assay data from all cells, order like the reference
+ad <- as.data.frame(GetAssayData(cancer.ds.epi, slot = 'data', assay = 'RNA'))
+ad <- ad[rownames(ad) %in% wt_ref$Gene,]
+ad <- ad[match(wt_ref$Gene,rownames(ad)),]
+
+# Get all SDs for all genes 
+ad_sd <- c()
+for(x in 1:nrow(ad)){
+  y <- ad[x,]
+  z <- sd(y)
+  ad_sd <- append(ad_sd,z)
+}
+
+# Z score
+ad_min_mean <- ad
+for(x in 1:ncol(ad_min_mean)){
+  ad_min_mean[,x] <- ad_min_mean[,x] - wt_ref$Control
+}
+ad_z <- ad_min_mean
+for(x in 1:ncol(ad_z)){
+  ad_z[,x] <- ad_z[,x]/ad_sd
+}
+
+# Adjust to max 3 and min 3 for Z scores
+ad_z[ad_z>3] <- 3
+ad_z[ad_z<-3] <- -3
+
+# Infer CNV by moving averages
+library(zoo)
+ad_z_cnv <- ad_z
+for(x in 1:ncol(ad_z_cnv)){
+  ad_z_cnv[,x] <- ad_z_cnv[,x] - rollmean(ad_z_cnv[,x], 150, na.pad = TRUE, align = "right")
+}
