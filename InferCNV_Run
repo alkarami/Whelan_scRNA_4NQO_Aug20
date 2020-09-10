@@ -1,0 +1,14 @@
+library(infercnv)
+infercnv_obj = CreateInfercnvObject(raw_counts_matrix="CancerMatrix.csv",
+                                    annotations_file="CancerAnno.csv",
+                                    delim=",",
+                                    gene_order_file="CancerChr.txt",
+                                    ref_group_names= c("Control_S6","Control_S7","Control_S8","Control_S9","Control_S10","Control_S11","Control_S1","Control_S2","Control_S4","Control_S5","Control_S12","Control_S13")
+infercnv_obj = infercnv::run(infercnv_obj,
+                             cutoff=.1, 
+                             out_dir="InferCNV_bySample", 
+                             cluster_by_groups=F, analysis_mode = 'subclusters', 
+                             denoise=T,
+                             HMM=T, num_threads = 4
+)
+
